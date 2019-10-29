@@ -12,6 +12,7 @@
 
 # .idea Folder
 .idea/
+.vscode/
 
 # Package Files #
 *.jar
