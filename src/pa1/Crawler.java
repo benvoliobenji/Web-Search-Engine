@@ -3,8 +3,8 @@ package pa1;
 import api.Graph;
 import api.Util;
 
-import java.util.ArrayList;
 import java.util.Queue;
+import java.util.HashMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.UnsupportedMimeTypeException;
@@ -49,13 +49,12 @@ public class Crawler
   public Graph<String> crawl()
   {
     // Initialize the discovered arraylist to keep track of the pages crawled
-    // TODO: Change discovered array list to be of integers and have the currentPages be the index
-    ArrayList<Vertex> discovered = new ArrayList<Vertex>();
+    HashMap<String, Vertex> discovered = new HashMap<>();
     Queue<Vertex> Q = new Queue();
 
     Vertex seedVertex = new Vertex(seed, 0);
     Q.add(seedVertex);
-    discovered.add(seedVertex);
+    discovered.put(seedVertex.getUrl(), seedVertex);
 
     int currentDepth = 0;
     int currentPages = 1;
@@ -92,18 +91,37 @@ public class Crawler
 
           Vertex newVertex = new Vertex(v);
 
-          if (!discovered.contains(newVertex))
+          if (!discovered.containsKey(newVertex.getUrl()))
           {
             int newVertexDepth = currentVertex.getDepth() + 1;
             if (currentPages < maximumPages && newVertexDepth <= maximumDepth)
             {
-              // Set the new vertex's depth and in degree
+              // Set the new vertex's depth and add an ancestor
               newVertex.setDepth(newVertexDepth);
+              newVertex.addAncestor(currentVertex);
 
-              discovered.add(newVertex);
+              // Update the current vertex to have this one as a child
+              currentVertex.addChild(newVertex);
+              discovered.put(currentVertex.getUrl(), currentVertex);
+
+              // Place the new vertex in the discovered HashMap and place it in the queue
+              discovered.put(newVertex.getUrl(), newVertex);
               Q.add(newVertex);
+
+              // Increment current pages to reflect the number of pages discovered ("crawled to")
               currentPages++;
             }
+          }
+          else
+          {
+            // Done to update relationships of ancestors and children
+            Vertex oldVertex = discovered.get(newVertex.getUrl());
+
+            oldVertex.addAncestor(currentVertex);
+            currentVertex.addChild(oldVertex);
+
+            discovered.put(oldVertex.getUrl(), oldVertex);
+            discovered.put(currentVertex.getUrl(), currentVertex);
           }
         }
         else

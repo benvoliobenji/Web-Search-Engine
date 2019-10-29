@@ -27,6 +27,14 @@ class Vertex
 
     public void setDepth(int depth) { this.depth = depth; }
 
+    public ArrayList<Vertex> getAncestors() { return ancestors; }
+
+    public void addAncestor(Vertex newAncestor) { ancestors.add(newAncestor); }
+
+    public ArrayList<Vertex> getChildren() { return children; }
+
+    public void addChild(Vertex newChild) { children.add(newChild); }
+
     
     public boolean equals(Object object) {
         if (this == object) return true;
