@@ -9,9 +9,9 @@ import api.TaggedVertex;;
 class VertexMap implements Graph
 {
     private LinkedHashMap<String, Vertex> graph;
-    private ArrayList<TaggedVertex> graphList;
+    private ArrayList<TaggedVertex<String>> graphList;
 
-    public VertexMap(HashMap<String, Vertex> newGraph)
+    public VertexMap(LinkedHashMap<String, Vertex> newGraph)
     {
         graph = newGraph;
 
@@ -27,7 +27,7 @@ class VertexMap implements Graph
         return graphList;
     }
 
-    public ArrayList<TaggedVertex> vertexDataWithIncomingCounts()
+    public ArrayList<TaggedVertex<String>> vertexDataWithIncomingCounts()
     {
         // Since the implementation of graphList is already TaggedVertex, just return it
         return graphList;

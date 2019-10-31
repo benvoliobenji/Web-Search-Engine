@@ -36,7 +36,6 @@ public class Crawler
     seed = seedUrl;
     maximumDepth = maxDepth;
     maximumPages = maxPages;
-    // TODO: Make a graph here or just make one and return it in the crawl() method?
   }
   
   /**
@@ -49,7 +48,7 @@ public class Crawler
   public Graph<String> crawl()
   {
     // Initialize the discovered arraylist to keep track of the pages crawled
-    HashMap<String, Vertex> discovered = new HashMap<>();
+    LinkedHashMap<String, Vertex> discovered = new HashMap<>();
     Queue<Vertex> Q = new Queue();
 
     Vertex seedVertex = new Vertex(seed, 0);
@@ -132,6 +131,7 @@ public class Crawler
         }
       }
     }
-    return null;
+    VertexGraph graph = new VertexGraph(discovered);
+    return graph;
   }
 }

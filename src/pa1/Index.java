@@ -1,16 +1,22 @@
 package pa1;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 
 import api.TaggedVertex;
+import api.Util;
 
 /**
  * Implementation of an inverted index for a web graph.
  * 
- * @author PLEASE FILL IN TEAM MEMBER NAMES HERE
+ * @author Benjamin Vogel
  */
 public class Index
 {
+  private List<TaggedVertex<String>> indexUrls;
+  private HashMap<String, List<URLOccurrence>> invertedIndex;
+
   /**
    * Constructs an index from the given list of urls.  The
    * tag value for each url is the indegree of the corresponding
@@ -20,7 +26,8 @@ public class Index
    */
   public Index(List<TaggedVertex<String>> urls)
   {
-    
+    indexUrls = urls;
+    invertedIndex = new HashMap<String, List<URLOccurrence>>();
   }
   
   /**
@@ -28,7 +35,82 @@ public class Index
    */
   public void makeIndex()
   {
-    // TODO
+    for(String url : indexUrls)
+    {
+      // Initially make the connection and grab the text
+      String document = null;
+      try
+      {
+        // TODO: Implement a politeness policy
+        document = Jsoup.connect(url).get().body().text();
+      }
+      catch (UnsupportedMimeTypeException e)
+      {
+        System.out.println("--unsupported document type, do nothing");
+        continue;
+      } 
+      catch (HttpStatusException e)
+      {
+        System.out.println("--invalid link, do nothing");
+        continue;
+      }
+
+      // Create a new scanner for the document
+      Scanner scanner = new Scanner(document);
+
+      // Create an individual hashmap to track the occurrence of each word in this url
+      HashMap<String, URLOccurrence> wordOccurrence = new HashMap<String, URLOccurrence>();
+
+      while (scanner.hasNext())
+      {
+        // Get the next word, strip punctuation, and check if it's a STOP word
+        String word = scanner.next();
+
+        word = Util.stripPunctuation(word);
+
+        if (!Util.isStopWord(word))
+        {
+          // Get the occurrence object from the hashmap
+          URLOccurrence occurrence = wordOccurrence.get(word);
+
+          if (occurrence == null)
+          {
+            // This is a new word, so initialize a URLOccurrence object
+            occurrence = new URLOccurrence(url, 1);
+          }
+          else
+          {
+            // We've seen this word before, so just increment the number of times we've seen it
+            occurrence.incrementOccurrences();
+          }
+
+          // Place the object back in the hashmap
+          wordOccurrence.put(word, occurrence);
+        }
+      }
+      scanner.close();
+
+      Set<String> wordSet = wordOccurrence.keySet();
+
+      // Iterate through each word in the hashmap above and place the occurrence in the list within invertedIndex
+      for (String word : wordSet)
+      {
+        URLOccurrence occurrence = wordOccurrence.get(word);
+        List<URLOccurrence> totalOccurrences = invertedIndex.get(word);
+
+        // Check if it is a new word in the invertedIndex
+        if (totalOccurrences == null)
+        {
+          totalOccurrences = new List<URLOccurrence>(occurrence);
+        }
+        else
+        {
+          totalOccurrences.add(occurrence);
+        }
+
+        invertedIndex.put(word, totalOccurrences);
+      }
+    }
   }
   
   /**

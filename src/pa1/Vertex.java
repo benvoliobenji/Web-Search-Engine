@@ -2,7 +2,7 @@ package pa1;
 
 import api.TaggedVertex;
 
-class Vertex extends TaggedVertex
+class Vertex extends TaggedVertex<String>
 {
     private String url;
     private int vertexNum;
