@@ -63,6 +63,7 @@ public class Crawler
     {
       Vertex currentVertex = Q.remove();
 
+      // TODO: Implement a politeness policy here as well
       Document doc = Jsoup.connect(currentVertex.getUrl()).get();
 
       Element links = doc.select("a[href]");

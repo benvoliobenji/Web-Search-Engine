@@ -1,27 +1,48 @@
 package pa1;
 
-class Vertex
+import api.TaggedVertex;
+
+class Vertex extends TaggedVertex
 {
     private String url;
+    private int vertexNum;
     private int depth;
     private ArrayList<Vertex> ancestors;
     private ArrayList<Vertex> children;
 
     public Vertex(String initUrl, int initDepth)
     {
+        super();
         url = initUrl;
         depth = initDepth;
+        vertexNum = 0;
+        ancestors = new ArrayList<Vertex>();
+        childrent = new ArrayList<Vertex>();
     }
 
     public Vertex(String initUrl)
     {
+        super();
         url = initUrl;
         depth = 0;
+        vertexNum = 0;
+        ancestors = new ArrayList<Vertex>();
+        childrent = new ArrayList<Vertex>();
     }
+
+    @Override
+    public String getVertexData() { return url; }
+
+    @Override
+    public int getTagValue() { return ancestors.size(); }
 
     public String getUrl() { return url; }
 
     public void setUrl(String url) { this.url = url; }
+
+    public int getIndex() { return vertexNum; }
+
+    public void setIndex(int index) { vertexNum = index; }
 
     public int getDepth() { return depth; }
 
