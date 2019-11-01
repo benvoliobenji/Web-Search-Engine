@@ -12,7 +12,7 @@ class Vertex extends TaggedVertex<String>
 
     public Vertex(String initUrl, int initDepth)
     {
-        super();
+        super(initUrl, initDepth);
         url = initUrl;
         depth = initDepth;
         vertexNum = 0;
@@ -22,7 +22,7 @@ class Vertex extends TaggedVertex<String>
 
     public Vertex(String initUrl)
     {
-        super();
+        super(initUrl, 0);
         url = initUrl;
         depth = 0;
         vertexNum = 0;

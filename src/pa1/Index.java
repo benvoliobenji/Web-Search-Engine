@@ -35,14 +35,14 @@ public class Index
    */
   public void makeIndex()
   {
-    for(String url : indexUrls)
+    for(TaggedVertex<String> url : indexUrls)
     {
       // Initially make the connection and grab the text
       String document = null;
       try
       {
         // TODO: Implement a politeness policy
-        document = Jsoup.connect(url).get().body().text();
+        document = Jsoup.connect(url.getVertexData()).get().body().text();
       }
       catch (UnsupportedMimeTypeException e)
       {
@@ -76,7 +76,7 @@ public class Index
           if (occurrence == null)
           {
             // This is a new word, so initialize a URLOccurrence object
-            occurrence = new URLOccurrence(url, 1);
+            occurrence = new URLOccurrence(url.getVertexData(), url.getTagValue(), 1);
           }
           else
           {
@@ -127,8 +127,26 @@ public class Index
    */
   public List<TaggedVertex<String>> search(String w)
   {
-    // TODO
-    return null;
+    // Start our new ranked list
+    List<RankVertex> rankedList = new List<RankVertex>();
+
+    // Get the urls and the ranks within the inverted index
+    List<URLOccurrence> totalOccurrences = invertedIndex.get(w);
+
+    // Check to make sure the word is in the inverted index
+    if (totalOccurrences != null)
+    {
+      // Increment over each of the urls and add them to the list
+      for (URLOccurrence url : totalOccurrences)
+      {
+        RankVertex urlRank = new RankVertex(url.getURL(), url.getRank());
+        rankedList.add(urlRank);
+      }
+
+      // Sort the list based on rank in descending order
+      rankedList.sort(Comparator.comparing(RankVertex::getTagValue).reversed());
+    }
+    return rankedList;
   }
 
 
@@ -150,8 +168,36 @@ public class Index
    */
   public List<TaggedVertex<String>> searchWithAnd(String w1, String w2)
   {
-    // TODO
-    return null;
+    HashMap<String, Integer> urlRankW1 = new HashMap<String, Integer>();
+
+    // Get the ranked lists for each word
+    List<TaggedVertex<String>> rankedListW1 = search(w1);
+    List<TaggedVertex<String>> rankedListW2 = search(w2);
+
+    List<RankVertex> rankedANDList = new List<RankVertex>();
+
+    for (TaggedVertex<String> vertex : rankedListW1)
+    {
+      // Place each of the url's for word 1 in the hashmap
+      urlRankW1.put(vertex.getVertexData(), vertex.getTagValue());
+    }
+
+    // Go through each vertex in the search list
+    for (TaggedVertex<String> compareVertex : rankedListW2)
+    {
+      Integer w1Rank = urlRankW1.get(compareVertex.getVertexData());
+
+      if (w1Rank != null)
+      {
+        // If the url is in the hashmap, then create a new vertex with that url, add the two ranks, and then add that to the list
+        RankVertex newANDVertex = new RankVertex(compareVertex.getVertexData(), compareVertex.getTagValue() + w1Rank);
+        rankedANDList.add(newANDVertex);
+      }
+    }
+
+    // Sort the list based on rank in descending order
+    rankedANDList.sort(Comparator.comparing(RankVertex::getTagValue).reversed());
+    return rankedANDList;
   }
   
   /**
@@ -172,8 +218,11 @@ public class Index
    */
   public List<TaggedVertex<String>> searchWithOr(String w1, String w2)
   {
-    // TODO
-    return null;
+    // Or is just AND, the ranks of W1 NOT W2, and W2 NOT W1 
+    List<TaggedVertex<String>> searchORList = searchWithAnd(w1, w2);
+    searchORList.addAll(searchAndNot(w1, w2));
+    searchORList.addAll(searchAndNot(w2, w1));
+    return searchORList;
   }
   
   /**
@@ -194,7 +243,49 @@ public class Index
    */
   public List<TaggedVertex<String>> searchAndNot(String w1, String w2)
   {
-    // TODO
-    return null;
+    List<TaggedVertex<String>> searchNOTList = new List<TaggedVertex<String>>();
+    List<TaggedVertex<String>> searchW1List = search(w1);
+    List<TaggedVertex<String>> searchW2List = search(w2);
+
+    // Create a new hashmap that contains all the urls that contain one word and not the other
+    HashMap<String, TaggedVertex<String>> notMap = new HashMap<String, TaggedVertex<String>>();
+
+    for (TaggedVertex<String> w1Vertex : searchW1List)
+    {
+      TaggedVertex<String> notVertex = notMap.get(w1Vertex.getVertexData());
+
+      // If the vertex is null, then it hasn't appeared in the hashmap, so add it
+      if (notVertex == null)
+      {
+        notMap.put(w1Vertex.getVertexData(), w1Vertex);
+      }
+      else
+      {
+        // However, if it is there, it means that both word 1 and word 2 have that url, so remove it
+        notMap.remove(w1Vertex.getVertexData());
+      }
+    }
+
+    for (TaggedVertex<String> w2Vertex : searchW2List)
+    {
+      TaggedVertex<String> notVertex = notMap.get(w2Vertex.getVertexData());
+
+      // If the vertex is null, then it hasn't appeared in the hashmap, so add it
+      if (notVertex == null)
+      {
+        notMap.put(w2Vertex.getVertexData(), w2Vertex);
+      }
+      else
+      {
+        // However, if it is there, it means that both word 1 and word 2 have that url, so remove it
+        notMap.remove(w2Vertex.getVertexData());
+      }
+    }
+
+    // Convert the map to values and then sort
+    searchNOTList = notMap.values();
+    searchNOTList.sort(Comparator.comparing(TaggedVertex<String>::getTagValue).reversed());
+
+    return searchNOTList;
   }
 }
