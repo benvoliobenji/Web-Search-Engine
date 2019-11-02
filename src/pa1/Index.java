@@ -1,11 +1,18 @@
 package pa1;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.*;
 
 import api.TaggedVertex;
 import api.Util;
+
+import org.jsoup.Jsoup;
+import org.jsoup.UnsupportedMimeTypeException;
+import org.jsoup.HttpStatusException;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  * Implementation of an inverted index for a web graph.
@@ -15,7 +22,8 @@ import api.Util;
 public class Index
 {
   private List<TaggedVertex<String>> indexUrls;
-  private HashMap<String, List<URLOccurrence>> invertedIndex;
+  private HashMap<String, ArrayList<URLOccurrence>> invertedIndex;
+  private int politenessTracker;
 
   /**
    * Constructs an index from the given list of urls.  The
@@ -27,7 +35,8 @@ public class Index
   public Index(List<TaggedVertex<String>> urls)
   {
     indexUrls = urls;
-    invertedIndex = new HashMap<String, List<URLOccurrence>>();
+    invertedIndex = new HashMap<String, ArrayList<URLOccurrence>>();
+    politenessTracker = 0;
   }
   
   /**
@@ -37,11 +46,24 @@ public class Index
   {
     for(TaggedVertex<String> url : indexUrls)
     {
+      // Politeness policy
+      if (politenessTracker > 50)
+      {
+        try
+        {
+          Thread.sleep(3000);
+        }
+        catch (InterruptedException e)
+        {
+          e.printStackTrace();
+          return;
+        }
+        politenessTracker = 0;
+      }
       // Initially make the connection and grab the text
       String document = null;
       try
       {
-        // TODO: Implement a politeness policy
         document = Jsoup.connect(url.getVertexData()).get().body().text();
       }
       catch (UnsupportedMimeTypeException e)
@@ -54,11 +76,20 @@ public class Index
         System.out.println("--invalid link, do nothing");
         continue;
       }
+      catch(IOException e)
+      {
+        e.printStackTrace();
+        continue;
+      }
+      finally
+      {
+        politenessTracker++;
+      }
 
       // Create a new scanner for the document
       Scanner scanner = new Scanner(document);
 
-      // Create an individual hashmap to track the occurrence of each word in this url
+      // Create an individual HashMap to track the occurrence of each word in this url
       HashMap<String, URLOccurrence> wordOccurrence = new HashMap<String, URLOccurrence>();
 
       while (scanner.hasNext())
@@ -79,36 +110,40 @@ public class Index
           }
           else
           {
-            // Get the occurrence object from the hashmap
+            // Get the occurrence object from the HashMap
             occurrence = wordOccurrence.get(word);
 
             // We've seen this word before, so just increment the number of times we've seen it
             occurrence.incrementOccurrences();
           }
 
-          // Place the object back in the hashmap
-          wordOccurrence.put(word, occurrence);
+          if (occurrence.getRank() > 0)
+          {
+            // Place the object back in the HashMap
+            wordOccurrence.put(word, occurrence);
+          }
         }
       }
       scanner.close();
 
       Set<String> wordSet = wordOccurrence.keySet();
 
-      // Iterate through each word in the hashmap above and place the occurrence in the list within invertedIndex
+      // Iterate through each word in the HashMap above and place the occurrence in the list within invertedIndex
       for (String word : wordSet)
       {
         URLOccurrence occurrence = wordOccurrence.get(word);
-        List<URLOccurrence> totalOccurrences;
+        ArrayList<URLOccurrence> totalOccurrences;
 
         // Check if it is a new word in the invertedIndex
         if (!invertedIndex.containsKey(word))
         {
-          totalOccurrences = new List<URLOccurrence>(occurrence);
+          totalOccurrences = new ArrayList<URLOccurrence>();
+          totalOccurrences.add(occurrence);
         }
         else
         {
           // Get the urls and the ranks within the inverted index
-          totalOccurrences = invertedIndex.get(w);
+          totalOccurrences = invertedIndex.get(word);
           totalOccurrences.add(occurrence);
         }
 
@@ -132,10 +167,10 @@ public class Index
   public List<TaggedVertex<String>> search(String w)
   {
     // Start our new ranked list
-    List<RankVertex> rankedList = new List<RankVertex>();
+    List<TaggedVertex<String>> rankedList = new ArrayList<TaggedVertex<String>>();
 
     // Check to make sure the word is in the inverted index
-    if (invertedIndex.containsKey(key))
+    if (invertedIndex.containsKey(w))
     {
       // Get the urls and the ranks within the inverted index
       List<URLOccurrence> totalOccurrences = invertedIndex.get(w);
@@ -148,7 +183,7 @@ public class Index
       }
 
       // Sort the list based on rank in descending order
-      rankedList.sort(Comparator.comparing(RankVertex::getTagValue).reversed());
+      rankedList.sort(Comparator.comparing(TaggedVertex<String>::getTagValue).reversed());
     }
     return rankedList;
   }
@@ -175,14 +210,14 @@ public class Index
     HashMap<String, Integer> urlRankW1 = new HashMap<String, Integer>();
 
     // Get the ranked lists for each word
-    List<TaggedVertex<String>> rankedListW1 = search(w1);
-    List<TaggedVertex<String>> rankedListW2 = search(w2);
+    List<TaggedVertex<String>> rankedListW1 = searchNoSort(w1);
+    List<TaggedVertex<String>> rankedListW2 = searchNoSort(w2);
 
-    List<RankVertex> rankedANDList = new List<RankVertex>();
+    List<TaggedVertex<String>> rankedANDList = new ArrayList<TaggedVertex<String>>();
 
     for (TaggedVertex<String> vertex : rankedListW1)
     {
-      // Place each of the url's for word 1 in the hashmap
+      // Place each of the url's for word 1 in the HashMap
       urlRankW1.put(vertex.getVertexData(), vertex.getTagValue());
     }
 
@@ -191,7 +226,7 @@ public class Index
     {
       if (urlRankW1.containsKey(compareVertex.getVertexData()))
       {
-        // If the url is in the hashmap, then create a new vertex with that url, add the two ranks, and then add that to the list
+        // If the url is in the HashMap, then create a new vertex with that url, add the two ranks, and then add that to the list
         Integer w1Rank = urlRankW1.get(compareVertex.getVertexData());
         RankVertex newANDVertex = new RankVertex(compareVertex.getVertexData(), compareVertex.getTagValue() + w1Rank);
         rankedANDList.add(newANDVertex);
@@ -199,7 +234,7 @@ public class Index
     }
 
     // Sort the list based on rank in descending order
-    rankedANDList.sort(Comparator.comparing(RankVertex::getTagValue).reversed());
+    rankedANDList.sort(Comparator.comparing(TaggedVertex<String>::getTagValue).reversed());
     return rankedANDList;
   }
   
@@ -225,6 +260,7 @@ public class Index
     List<TaggedVertex<String>> searchORList = searchWithAnd(w1, w2);
     searchORList.addAll(searchAndNot(w1, w2));
     searchORList.addAll(searchAndNot(w2, w1));
+    searchORList.sort(Comparator.comparing(TaggedVertex<String>::getTagValue).reversed());
     return searchORList;
   }
   
@@ -246,46 +282,56 @@ public class Index
    */
   public List<TaggedVertex<String>> searchAndNot(String w1, String w2)
   {
-    List<TaggedVertex<String>> searchNOTList = new List<TaggedVertex<String>>();
-    List<TaggedVertex<String>> searchW1List = search(w1);
-    List<TaggedVertex<String>> searchW2List = search(w2);
+    List<TaggedVertex<String>> searchNOTList;
+    List<TaggedVertex<String>> searchW1List = searchNoSort(w1);
+    List<TaggedVertex<String>> searchW2List = searchNoSort(w2);
 
-    // Create a new hashmap that contains all the urls that contain one word and not the other
+    // Create a new HashMap that contains all the urls that contain one word and not the other
     HashMap<String, TaggedVertex<String>> notMap = new HashMap<String, TaggedVertex<String>>();
 
     for (TaggedVertex<String> w1Vertex : searchW1List)
     {
-      
-      if (notMap.containsKey(w1Vertex.getVertexData()))
-      {
-        // If the map does not contain the vertex, then it hasn't appeared in the hashmap, so add it
+        // If the map does not contain the vertex, then it hasn't appeared in the HashMap, so add it
         notMap.put(w1Vertex.getVertexData(), w1Vertex);
-      }
-      else
-      {
-        // However, if it is there, it means that both word 1 and word 2 have that url, so remove it
-        notMap.remove(w1Vertex.getVertexData());
-      }
     }
 
     for (TaggedVertex<String> w2Vertex : searchW2List)
     {
-      // If the vertex is null, then it hasn't appeared in the hashmap, so add it
-      if (notMap.containsKey(w2Vertex.getVertexData()))
-      {
-        notMap.put(w2Vertex.getVertexData(), w2Vertex);
-      }
-      else
-      {
-        // However, if it is there, it means that both word 1 and word 2 have that url, so remove it
-        notMap.remove(w2Vertex.getVertexData());
-      }
+      // This URL contains both w1 and w2, so remove it from the Map
+      notMap.remove(w2Vertex.getVertexData());
     }
 
     // Convert the map to values and then sort
-    searchNOTList = notMap.values();
+    searchNOTList = new ArrayList<TaggedVertex<String>>(notMap.values());
     searchNOTList.sort(Comparator.comparing(TaggedVertex<String>::getTagValue).reversed());
 
     return searchNOTList;
+  }
+
+  /**
+   * The exact same method as search() above, but it doesn't sort the list. This allows for other methods
+   * to use it as a helper and reduce their runtimes.
+   * @param w
+   *    keyword to search for
+   * @return
+   *    ranked list of urls
+   */
+  private List<TaggedVertex<String>> searchNoSort(String w) {
+    // Start our new ranked list
+    List<TaggedVertex<String>> rankedList = new ArrayList<TaggedVertex<String>>();
+
+    // Check to make sure the word is in the inverted index
+    if (invertedIndex.containsKey(w)) {
+      // Get the urls and the ranks within the inverted index
+      List<URLOccurrence> totalOccurrences = invertedIndex.get(w);
+
+      // Increment over each of the urls and add them to the list
+      for (URLOccurrence url : totalOccurrences) {
+        RankVertex urlRank = new RankVertex(url.getURL(), url.getRank());
+        rankedList.add(urlRank);
+      }
+    }
+
+    return rankedList;
   }
 }

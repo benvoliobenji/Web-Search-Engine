@@ -2,6 +2,15 @@ package pa1;
 
 import api.TaggedVertex;
 
+import java.util.ArrayList;
+
+/**
+ * A much more involved data structure than RankVertex. This data structure is what Crawler uses in the Graph
+ * data structure, and contains much more information than is required. This structure also extends the
+ * TaggedVertex of type String abstract class, where the data is the url, and the tag value is the indegree of the
+ * url the vertex represents.
+ * @author Benjamin Vogel
+ */
 class Vertex extends TaggedVertex<String>
 {
     private String url;
@@ -10,6 +19,13 @@ class Vertex extends TaggedVertex<String>
     private ArrayList<Vertex> ancestors;
     private ArrayList<Vertex> children;
 
+    /**
+     * Constructs a Vertex object with a depth.
+     * @param initUrl
+     *      The URL associated with this vertex
+     * @param initDepth
+     *      The depth the vertex is in the graph
+     */
     public Vertex(String initUrl, int initDepth)
     {
         super(initUrl, initDepth);
@@ -20,12 +36,16 @@ class Vertex extends TaggedVertex<String>
         children = new ArrayList<Vertex>();
     }
 
+    /**
+     * Constructs a vertex object with just the URL.
+     * @param initUrl
+     *      THe URL associated with this vertex
+     */
     public Vertex(String initUrl)
     {
         super(initUrl, 0);
         url = initUrl;
         depth = 0;
-        vertexNum = 0;
         ancestors = new ArrayList<Vertex>();
         children = new ArrayList<Vertex>();
     }

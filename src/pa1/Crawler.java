@@ -1,19 +1,10 @@
 package pa1;
 
 import api.Graph;
-import api.Util;
 
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.jsoup.Jsoup;
-import org.jsoup.UnsupportedMimeTypeException;
-import org.jsoup.HttpStatusException;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /**
  * Implementation of a basic web crawler that creates a graph of some
@@ -49,9 +40,9 @@ public class Crawler
    */
   public Graph<String> crawl()
   {
-    // Initialize the discovered arraylist to keep track of the pages crawled
-    LinkedHashMap<String, Vertex> discovered = new HashMap<String, Vertex>();
-    Queue<Vertex> Q = new Queue();
+    // Initialize the discovered ArrayList to keep track of the pages crawled
+    LinkedHashMap<String, Vertex> discovered = new LinkedHashMap<>();
+    Queue<Vertex> Q = new LinkedList<Vertex>();
 
     ArrayList<Thread> crawlerThreads = new ArrayList<Thread>();
     boolean crawling = true;
@@ -60,7 +51,9 @@ public class Crawler
     Q.add(seedVertex);
     discovered.put(seedVertex.getUrl(), seedVertex);
 
+    // Variables used to enforce correct politeness
     AtomicInteger politenessInteger = new AtomicInteger(0);
+    Semaphore politenessSemaphore = new Semaphore(1);
 
     do
     {
@@ -71,9 +64,10 @@ public class Crawler
         {
           Vertex currentVertex = Q.remove();
 
-          // Spawn a new crawler thread and add it to the arraylist
-          CrawlerThread newCrawlerThread = new CrawlerThread(currentVertex, discovered, Q, maximumPages, maximumDepth);
-          newCrawlerThread.run();
+          // Spawn a new crawler thread and add it to the ArrayList
+          CrawlerThread newCrawlerThread = new CrawlerThread(currentVertex, discovered, Q,
+                  maximumPages, maximumDepth, politenessInteger, politenessSemaphore);
+          newCrawlerThread.start();
           crawlerThreads.add(newCrawlerThread);
         }
 
@@ -91,7 +85,7 @@ public class Crawler
         catch (InterruptedException e)
         {
           // Change this maybe?
-          throw new RuntimeException(e); 
+          throw new RuntimeException(e);
         }
       }
 
@@ -100,7 +94,6 @@ public class Crawler
 
     } while (crawling);
 
-    VertexGraph graph = new VertexGraph(discovered);
-    return graph;
+    return new VertexMap(discovered);
   }
 }
