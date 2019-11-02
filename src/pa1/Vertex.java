@@ -17,7 +17,7 @@ class Vertex extends TaggedVertex<String>
         depth = initDepth;
         vertexNum = 0;
         ancestors = new ArrayList<Vertex>();
-        childrent = new ArrayList<Vertex>();
+        children = new ArrayList<Vertex>();
     }
 
     public Vertex(String initUrl)
@@ -27,7 +27,7 @@ class Vertex extends TaggedVertex<String>
         depth = 0;
         vertexNum = 0;
         ancestors = new ArrayList<Vertex>();
-        childrent = new ArrayList<Vertex>();
+        children = new ArrayList<Vertex>();
     }
 
     @Override

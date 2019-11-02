@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import api.Graph;
 import api.TaggedVertex;;
 
-class VertexMap implements Graph
+class VertexMap implements Graph<String>
 {
     private LinkedHashMap<String, Vertex> graph;
     private ArrayList<TaggedVertex<String>> graphList;
@@ -22,9 +22,9 @@ class VertexMap implements Graph
 
     // TODO: Determine if vertexData() should be the exact same as vertexDataWithIncomingCounts()
     // It should be given the implementation of Vertex
-    public ArrayList<Vertex> vertexData()
+    public ArrayList<String> vertexData()
     {
-        return graphList;
+        return graph.keySet();
     }
 
     public ArrayList<TaggedVertex<String>> vertexDataWithIncomingCounts()

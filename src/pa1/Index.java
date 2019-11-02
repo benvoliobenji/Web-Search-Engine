@@ -70,16 +70,18 @@ public class Index
 
         if (!Util.isStopWord(word))
         {
-          // Get the occurrence object from the hashmap
-          URLOccurrence occurrence = wordOccurrence.get(word);
+          URLOccurrence occurrence;
 
-          if (occurrence == null)
+          if (!wordOccurrence.containsKey(word))
           {
             // This is a new word, so initialize a URLOccurrence object
             occurrence = new URLOccurrence(url.getVertexData(), url.getTagValue(), 1);
           }
           else
           {
+            // Get the occurrence object from the hashmap
+            occurrence = wordOccurrence.get(word);
+
             // We've seen this word before, so just increment the number of times we've seen it
             occurrence.incrementOccurrences();
           }
@@ -96,15 +98,17 @@ public class Index
       for (String word : wordSet)
       {
         URLOccurrence occurrence = wordOccurrence.get(word);
-        List<URLOccurrence> totalOccurrences = invertedIndex.get(word);
+        List<URLOccurrence> totalOccurrences;
 
         // Check if it is a new word in the invertedIndex
-        if (totalOccurrences == null)
+        if (!invertedIndex.containsKey(word))
         {
           totalOccurrences = new List<URLOccurrence>(occurrence);
         }
         else
         {
+          // Get the urls and the ranks within the inverted index
+          totalOccurrences = invertedIndex.get(w);
           totalOccurrences.add(occurrence);
         }
 
@@ -130,12 +134,12 @@ public class Index
     // Start our new ranked list
     List<RankVertex> rankedList = new List<RankVertex>();
 
-    // Get the urls and the ranks within the inverted index
-    List<URLOccurrence> totalOccurrences = invertedIndex.get(w);
-
     // Check to make sure the word is in the inverted index
-    if (totalOccurrences != null)
+    if (invertedIndex.containsKey(key))
     {
+      // Get the urls and the ranks within the inverted index
+      List<URLOccurrence> totalOccurrences = invertedIndex.get(w);
+
       // Increment over each of the urls and add them to the list
       for (URLOccurrence url : totalOccurrences)
       {
@@ -185,11 +189,10 @@ public class Index
     // Go through each vertex in the search list
     for (TaggedVertex<String> compareVertex : rankedListW2)
     {
-      Integer w1Rank = urlRankW1.get(compareVertex.getVertexData());
-
-      if (w1Rank != null)
+      if (urlRankW1.containsKey(compareVertex.getVertexData()))
       {
         // If the url is in the hashmap, then create a new vertex with that url, add the two ranks, and then add that to the list
+        Integer w1Rank = urlRankW1.get(compareVertex.getVertexData());
         RankVertex newANDVertex = new RankVertex(compareVertex.getVertexData(), compareVertex.getTagValue() + w1Rank);
         rankedANDList.add(newANDVertex);
       }
@@ -252,11 +255,10 @@ public class Index
 
     for (TaggedVertex<String> w1Vertex : searchW1List)
     {
-      TaggedVertex<String> notVertex = notMap.get(w1Vertex.getVertexData());
-
-      // If the vertex is null, then it hasn't appeared in the hashmap, so add it
-      if (notVertex == null)
+      
+      if (notMap.containsKey(w1Vertex.getVertexData()))
       {
+        // If the map does not contain the vertex, then it hasn't appeared in the hashmap, so add it
         notMap.put(w1Vertex.getVertexData(), w1Vertex);
       }
       else
@@ -268,10 +270,8 @@ public class Index
 
     for (TaggedVertex<String> w2Vertex : searchW2List)
     {
-      TaggedVertex<String> notVertex = notMap.get(w2Vertex.getVertexData());
-
       // If the vertex is null, then it hasn't appeared in the hashmap, so add it
-      if (notVertex == null)
+      if (notMap.containsKey(w2Vertex.getVertexData()))
       {
         notMap.put(w2Vertex.getVertexData(), w2Vertex);
       }

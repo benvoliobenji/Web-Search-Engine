@@ -4,6 +4,8 @@ import api.Graph;
 import api.Util;
 
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.jsoup.Jsoup;
@@ -48,89 +50,56 @@ public class Crawler
   public Graph<String> crawl()
   {
     // Initialize the discovered arraylist to keep track of the pages crawled
-    LinkedHashMap<String, Vertex> discovered = new HashMap<>();
+    LinkedHashMap<String, Vertex> discovered = new HashMap<String, Vertex>();
     Queue<Vertex> Q = new Queue();
+
+    ArrayList<Thread> crawlerThreads = new ArrayList<Thread>();
+    boolean crawling = true;
 
     Vertex seedVertex = new Vertex(seed, 0);
     Q.add(seedVertex);
     discovered.put(seedVertex.getUrl(), seedVertex);
 
-    int currentDepth = 0;
-    int currentPages = 1;
+    AtomicInteger politenessInteger = new AtomicInteger(0);
 
-    while (!Q.isEmpty())
+    do
     {
-      Vertex currentVertex = Q.remove();
-
-      // TODO: Implement a politeness policy here as well
-      Document doc = Jsoup.connect(currentVertex.getUrl()).get();
-
-      Element links = doc.select("a[href]");
-      for (Element link : links)
+      synchronized(Q)
       {
-        String v = link.attr("abs:href");
-
-        Document temp = null;
-        if (!Util.ignoreLink(currentVertex.getUrl(), v))
+        // Empty out the queue for this layer
+        while(!Q.isEmpty())
         {
-          try
-          {
-            // TODO: Implement a politeness policy
-            temp = Jsoup.connect(v).get();
-          }
-          catch (UnsupportedMimeTypeException e)
-          {
-            System.out.println("--unsupported document type, do nothing");
-            continue;
-          } 
-          catch (HttpStatusException  e)
-          {
-            System.out.println("--invalid link, do nothing");
-            continue;
-          }
+          Vertex currentVertex = Q.remove();
 
-          Vertex newVertex = new Vertex(v);
-
-          if (!discovered.containsKey(newVertex.getUrl()))
-          {
-            int newVertexDepth = currentVertex.getDepth() + 1;
-            if (currentPages < maximumPages && newVertexDepth <= maximumDepth)
-            {
-              // Set the new vertex's depth and add an ancestor
-              newVertex.setDepth(newVertexDepth);
-              newVertex.addAncestor(currentVertex);
-
-              // Update the current vertex to have this one as a child
-              currentVertex.addChild(newVertex);
-              discovered.put(currentVertex.getUrl(), currentVertex);
-
-              // Place the new vertex in the discovered HashMap and place it in the queue
-              discovered.put(newVertex.getUrl(), newVertex);
-              Q.add(newVertex);
-
-              // Increment current pages to reflect the number of pages discovered ("crawled to")
-              currentPages++;
-            }
-          }
-          else
-          {
-            // Done to update relationships of ancestors and children
-            Vertex oldVertex = discovered.get(newVertex.getUrl());
-
-            oldVertex.addAncestor(currentVertex);
-            currentVertex.addChild(oldVertex);
-
-            discovered.put(oldVertex.getUrl(), oldVertex);
-            discovered.put(currentVertex.getUrl(), currentVertex);
-          }
+          // Spawn a new crawler thread and add it to the arraylist
+          CrawlerThread newCrawlerThread = new CrawlerThread(currentVertex, discovered, Q, maximumPages, maximumDepth);
+          newCrawlerThread.run();
+          crawlerThreads.add(newCrawlerThread);
         }
-        else
+
+      }
+
+
+      // Wait until all threads are done
+      // Simply put, this synchronizes so we don't move past each "layer" without waiting for all of the threads to finish
+      for (Thread crawlThread : crawlerThreads)
+      {
+        try
         {
-          System.out.println("--ignore");
-          continue;
+          crawlThread.join();
+        }
+        catch (InterruptedException e)
+        {
+          // Change this maybe?
+          throw new RuntimeException(e); 
         }
       }
-    }
+
+      // Now that all threads are joined, check if the queue is still empty
+      crawling = !Q.isEmpty();
+
+    } while (crawling);
+
     VertexGraph graph = new VertexGraph(discovered);
     return graph;
   }
