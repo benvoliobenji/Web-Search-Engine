@@ -117,40 +117,43 @@ class CrawlerThread extends Thread
             String v = link.attr("abs:href");
 //            System.out.println("Found: " + v);
 
-            Document temp = null;
+//            Document temp = null;
             if (!Util.ignoreLink(threadVertex.getUrl(), v))
             {
-                try
-                {
-                    try
-                    {
-                        // Used so that we don't have multiple threads sleeping, instead the rest just wait on the
-                        // semaphore
-                        if (PolitenessPolicy()) return;
-
-                        temp = Jsoup.connect(v).get();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                        return;
-                    }
-                }
-                catch (UnsupportedMimeTypeException e)
-                {
-                    System.out.println("--unsupported document type, do nothing");
-                    return;
-                } 
-                catch (HttpStatusException  e)
-                {
-                    System.out.println("--invalid link, do nothing");
-                    return;
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
-                    return;
-                }
+                // This was originally trying to catch invalid links before adding them to the graph
+                // but I realized those are also valid notes, just leaf nodes.
+                // This also greatly speeds up the execution of the program.
+//                try
+//                {
+//                    try
+//                    {
+//                        // Used so that we don't have multiple threads sleeping, instead the rest just wait on the
+//                        // semaphore
+//                        if (PolitenessPolicy()) return;
+//
+//                        temp = Jsoup.connect(v).get();
+//                    }
+//                    catch (InterruptedException e)
+//                    {
+//                        e.printStackTrace();
+//                        return;
+//                    }
+//                }
+//                catch (UnsupportedMimeTypeException e)
+//                {
+//                    System.out.println("--unsupported document type, do nothing");
+//                    return;
+//                }
+//                catch (HttpStatusException  e)
+//                {
+//                    System.out.println("--invalid link, do nothing");
+//                    return;
+//                }
+//                catch (IOException e)
+//                {
+//                    e.printStackTrace();
+//                    return;
+//                }
 
                 Vertex newVertex = new Vertex(v);
 
