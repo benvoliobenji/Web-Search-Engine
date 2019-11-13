@@ -61,19 +61,19 @@ public class Index
         politenessTracker = 0;
       }
       // Initially make the connection and grab the text
-      String document = null;
+      Element document = null;
       try
       {
-        document = Jsoup.connect(url.getVertexData()).get().body().text();
+        document = Jsoup.connect(url.getVertexData()).get().body();
       }
       catch (UnsupportedMimeTypeException e)
       {
-        System.out.println("--unsupported document type, do nothing");
+//        System.out.println("--unsupported document type, do nothing");
         continue;
       } 
       catch (HttpStatusException e)
       {
-        System.out.println("--invalid link, do nothing");
+//        System.out.println("--invalid link, do nothing");
         continue;
       }
       catch(IOException e)
@@ -86,8 +86,14 @@ public class Index
         politenessTracker++;
       }
 
+      if (document == null)
+      {
+        continue;
+      }
+      String text = document.text();
+
       // Create a new scanner for the document
-      Scanner scanner = new Scanner(document);
+      Scanner scanner = new Scanner(text);
 
       // Create an individual HashMap to track the occurrence of each word in this url
       HashMap<String, URLOccurrence> wordOccurrence = new HashMap<String, URLOccurrence>();

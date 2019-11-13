@@ -48,6 +48,7 @@ public class Crawler
     boolean crawling = true;
 
     Vertex seedVertex = new Vertex(seed, 0);
+    seedVertex.setIsSeed(true);
     Q.add(seedVertex);
     discovered.put(seedVertex.getUrl(), seedVertex);
 

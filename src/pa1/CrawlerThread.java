@@ -93,12 +93,12 @@ class CrawlerThread extends Thread
         }
         catch (UnsupportedMimeTypeException e)
         {
-            System.out.println("--unsupported document type, do nothing");
+//            System.out.println("--unsupported document type, do nothing");
             return;
         }
         catch (HttpStatusException  e)
         {
-            System.out.println("--invalid link, do nothing");
+//            System.out.println("--invalid link, do nothing");
             return;
         }
         catch (IOException e)
@@ -200,7 +200,7 @@ class CrawlerThread extends Thread
             }
             else
             {
-                System.out.println("--ignore");
+//                System.out.println("--ignore");
                 return;
             }
         }

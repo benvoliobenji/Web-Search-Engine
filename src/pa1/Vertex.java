@@ -16,6 +16,7 @@ class Vertex extends TaggedVertex<String>
     private String url;
     private int vertexNum;
     private int depth;
+    private boolean isSeed = false;
     private ArrayList<Vertex> ancestors;
     private ArrayList<Vertex> children;
 
@@ -54,7 +55,16 @@ class Vertex extends TaggedVertex<String>
     public String getVertexData() { return url; }
 
     @Override
-    public int getTagValue() { return ancestors.size(); }
+    public int getTagValue() {
+        if (!isSeed)
+        {
+            return ancestors.size();
+        }
+        else
+        {
+            return ancestors.size() + 1;
+        }
+    }
 
     public String getUrl() { return url; }
 
@@ -67,6 +77,10 @@ class Vertex extends TaggedVertex<String>
     public int getDepth() { return depth; }
 
     public void setDepth(int depth) { this.depth = depth; }
+
+    public boolean getIsSeed() { return isSeed; }
+
+    public void setIsSeed(boolean IsSeed) { isSeed = IsSeed; }
 
     public ArrayList<Vertex> getAncestors() { return ancestors; }
 
